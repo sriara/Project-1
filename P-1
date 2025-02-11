@@ -1,0 +1,138 @@
+//header file
+#include "TroykaDHT.h"
+#include "SPI.h"
+#include "SD.h"
+#include "SFE_BMP180.h"
+#include "Wire.h"
+//variable
+DHT dht(5, DHT11);
+const int chipSelect = 4;
+File myFile;
+SFE_BMP180 pressure;
+
+#define ALTITUDE 138
+
+void setup() {
+// put your setup code here, to run once:
+Serial.begin(9600);
+dht.begin();
+
+while (!Serial) {
+; // wait for serial port to connect. Needed for native USB port only
+}
+Serial.print("Initializing SD card...");
+if (!SD.begin(4)) {
+Serial.println("initialization failed!");
+while (1);
+}
+Serial.println("initialization done.");
+
+
+// open the file. note that only one file can be open at a time,
+// so you have to close this one before opening another.
+
+if (pressure.begin())
+
+Serial.println("BMP180 init success");
+else
+
+{
+
+Serial.println("BMP180 init fail\n\n");
+
+Serial.println("Check connection");
+
+while (1);
+
+}
+
+}
+
+void loop() {
+
+// put your main code here, to run repeatedly:
+dht.read();
+char status;
+
+double T, P, p0, a;
+myFile = SD.open("data.txt", FILE_WRITE);
+
+
+// if the file opened okay, write to it:
+
+if (myFile) {
+
+Serial.print("Writing to test.txt...");
+
+Serial.print("Temperature = ");
+
+myFile.println(dht.getTemperatureC());
+
+Serial.println(" C \t");
+
+Serial.print("Temperature = ");
+
+myFile.println(dht.getTemperatureK());
+
+Serial.println(" K \t");
+Serial.print("Humidity = ");
+
+myFile.println(dht.getHumidity());
+
+Serial.println(" %");
+
+myFile.print("absolute pressure: ");
+
+myFile.print(P, 2);
+
+myFile.print(" hpa = ");
+
+myFile.print(P * 100, 2);
+
+myFile.print(" pa = ");
+
+myFile.print(P * 0.000986923, 2);
+
+myFile.print(" atm = ");
+
+myFile.print(P * 0.750063755, 2);
+
+myFile.print(" mmHg = ");
+
+myFile.print(P * 0.750061683, 2);
+
+myFile.print(" torr = ");
+
+myFile.print(P * 0.014503774, 2);
+
+myFile.println(" psi");
+
+p0 = pressure.sealevel(P, ALTITUDE); // we're at 943.7 meters
+
+myFile.print("relative (sea-level) pressure: ");
+myFile.print(p0, 2);
+
+myFile.println(" hpa ");;
+
+a = pressure.altitude(P, p0);
+
+myFile.print("your altitude: ");
+
+myFile.print(a, 0);
+
+myFile.println(" meters ");
+
+delay(2000);
+
+// close the file:
+
+myFile.close();
+
+Serial.println("done.");
+
+} else {
+
+// if the file didn't open, print an error:
+Serial.println("error opening test.txt");
+}
+}
